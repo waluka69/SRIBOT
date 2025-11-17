@@ -1,132 +1,285 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Number WhatsApp Bot Manager</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f4; color: #333; }
-        .container { max-width: 600px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        h1, h2 { color: #0056b3; }
-        input[type="text"], button { padding: 10px; margin: 5px 0; border-radius: 4px; border: 1px solid #ddd; width: calc(100% - 22px); box-sizing: border-box; }
-        button { background-color: #007bff; color: white; cursor: pointer; border: none; }
-        button:hover { background-color: #0056b3; }
-        .status-message { margin-top: 10px; padding: 10px; border-radius: 4px; }
-        .success { background-color: #d4edda; color: #155724; border-color: #c3e6cb; }
-        .error { background-color: #f8d7da; color: #721c24; border-color: #f5c6cb; }
-        .info { background-color: #d1ecf1; color: #0c5460; border-color: #bee5eb; }
-        ul { list-style: none; padding: 0; }
-        li { background: #e9ecef; margin-bottom: 5px; padding: 8px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
-        li button { width: auto; margin: 0; padding: 5px 10px; font-size: 0.8em; }
-    </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>WhatsApp Bot Manager — Login & Config</title>
+<style>
+  :root { --primary:#d93025; --muted:#f4f4f4; --card:#fff; --accent:#007bff; }
+  body{font-family:Inter,Segoe UI,Arial;background:var(--muted);margin:0;padding:24px; color:#111}
+  .wrap{max-width:980px;margin:0 auto;display:grid;grid-template-columns:1fr 420px;gap:20px}
+  .card{background:var(--card);padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(10,10,10,0.06)}
+  h1{margin:0 0 8px;font-size:20px;color:var(--primary)}
+  label{display:block;font-size:13px;margin-top:10px;color:#333}
+  input,textarea,select{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e6e6;margin-top:6px;box-sizing:border-box}
+  button{background:var(--accent);color:#fff;padding:10px 12px;border-radius:8px;border:none;cursor:pointer}
+  .muted{color:#666;font-size:13px}
+  .small{font-size:13px}
+  .list{margin:0;padding:0;list-style:none}
+  .list li{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;background:#f7f9fc;margin-bottom:8px}
+  .pairing{background:#fff2cc;padding:10px;border-radius:8px;border:1px solid #ffe7a3;color:#6b4b00}
+  .success{background:#e6ffed;padding:10px;border-radius:8px;border:1px solid #bff0c6;color:#0b6623}
+  .error{background:#ffecec;padding:10px;border-radius:8px;border:1px solid #ffbdbd;color:#a20b0b}
+  pre{background:#f6f8fa;padding:10px;border-radius:8px;overflow:auto}
+  .mono{font-family:monospace,ui-monospace}
+  .row{display:flex;gap:8px}
+  .col{flex:1}
+  .center{text-align:center}
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1>WhatsApp Bot Manager</h1>
+<div class="wrap">
+  <div class="card">
+    <h1>WhatsApp Bot Manager</h1>
+    <p class="muted">Fixed pairing flow with local session saving. After connection, password is sent to bot for login.</p>
 
-        <div id="status" class="status-message info" style="display: none;"></div>
+    <section id="connectSection">
+      <h3>Connect New Number</h3>
+      <label>Phone number (e.g., 947XXXXXXXX)</label>
+      <div class="row">
+        <input id="phoneNumber" type="text" placeholder="947xxxxxxxx" />
+        <button id="connectBtn">Connect</button>
+      </div>
+      <div id="connectStatus" class="muted small" style="margin-top:8px"></div>
+    </section>
 
-        <h2>Connect New Number</h2>
-        <input type="text" id="phoneNumber" placeholder="Enter phone number (e.g., 947xxxxxxxx)">
-        <button onclick="connectNumber()">Connect</button>
+    <hr style="margin:16px 0">
 
-        <h2>Active Bots (<span id="activeCount">0</span>)</h2>
-        <ul id="activeBotsList">
-            <!-- Active bots will be listed here -->
-        </ul>
+    <section id="pairingSection">
+      <h3>Pairing Info</h3>
+      <div id="pairingBox" class="pairing">No pairing code yet. Connect a number to receive a pairing code (if the number isn't registered).</div>
+    </section>
+
+    <hr style="margin:16px 0">
+
+    <section id="activeSection">
+      <h3>Active Bots <span id="activeCount" class="muted small">(0)</span></h3>
+      <ul id="activeList" class="list"><li class="muted">Loading...</li></ul>
+    </section>
+  </div>
+
+  <div class="card">
+    <h3 id="panelTitle">Login to Edit Bot Config</h3>
+
+    <div id="loginPanel">
+      <label>Bot Number</label>
+      <input id="loginNumber" placeholder="947xxxxxxxx" />
+      <label>Password</label>
+      <input id="loginPassword" placeholder="Password sent to bot number" />
+      <div style="height:10px"></div>
+      <div class="row">
+        <button id="loginBtn">Login</button>
+        <button id="fetchConfigBtn" style="background:#6c757d">Load Default Config</button>
+      </div>
+      <div id="loginMsg" style="margin-top:10px"></div>
     </div>
 
-    <script>
-        const statusDiv = document.getElementById('status');
-        const activeCountSpan = document.getElementById('activeCount');
-        const activeBotsList = document.getElementById('activeBotsList');
+    <div id="editorPanel" style="display:none;margin-top:12px">
+      <div class="row">
+        <div class="col">
+          <label>Bot Number</label>
+          <input id="editNumber" readonly />
+        </div>
+        <div class="col">
+          <label>Password (readonly)</label>
+          <input id="editPassword" readonly />
+        </div>
+      </div>
 
-        function showStatus(message, type) {
-            statusDiv.textContent = message;
-            statusDiv.className = `status-message ${type}`;
-            statusDiv.style.display = 'block';
-            setTimeout(() => {
-                statusDiv.style.display = 'none';
-            }, 5000);
-        }
+      <label style="margin-top:10px">Config (JSON)</label>
+      <textarea id="configTextarea" rows="12" class="mono"></textarea>
 
-        async function connectNumber() {
-            const phoneNumber = document.getElementById('phoneNumber').value.trim();
-            if (!phoneNumber) {
-                showStatus('Please enter a phone number.', 'error');
-                return;
-            }
+      <div style="height:10px"></div>
+      <div class="row">
+        <button id="saveConfigBtn">Save Config</button>
+        <button id="logoutBtn" style="background:#999">Logout</button>
+      </div>
 
-            showStatus('Connecting...', 'info');
-            try {
-                const response = await fetch(`/connect?number=${phoneNumber}`);
-                const data = await response.json();
-                if (response.ok) {
-                    if (data.status === 'connected') {
-                        showStatus('Bot connected successfully!', 'success');
-                    } else if (data.status === 'already_connected') {
-                        showStatus('This number is already connected.', 'info');
-                    } else if (data.code) {
-                        showStatus(`Pairing code: ${data.code}. Scan this code with your WhatsApp app.`, 'info');
-                    }
-                    fetchActiveBots();
-                } else {
-                    showStatus(`Error: ${data.error || 'Unknown error'}`, 'error');
-                }
-            } catch (error) {
-                console.error('Connection error:', error);
-                showStatus('Failed to connect to the server.', 'error');
-            }
-        }
+      <div id="saveMsg" style="margin-top:10px"></div>
+    </div>
 
-        async function disconnectNumber(number) {
-            if (!confirm(`Are you sure you want to disconnect ${number}?`)) {
-                return;
-            }
+    <div id="help" style="margin-top:14px" class="muted small">
+      <strong>Notes:</strong>
+      <ul>
+        <li>Login credentials: <code>BotNumber</code> + <code>Password</code> (password auto-sent to bot on connect).</li>
+        <li>Saved configs go to repo folder <code>Config/</code> as <code>{sanitizedNumber}_config.json</code>.</li>
+        <li>Pairing code flow is now fixed with proper local session saving.</li>
+      </ul>
+    </div>
+  </div>
+</div>
 
-            showStatus(`Disconnecting ${number}...`, 'info');
-            try {
-                const response = await fetch(`/disconnect?number=${number}`);
-                const data = await response.json();
-                if (response.ok) {
-                    showStatus(data.message, 'success');
-                    fetchActiveBots();
-                } else {
-                    showStatus(`Error: ${data.message || 'Unknown error'}`, 'error');
-                }
-            } catch (error) {
-                console.error('Disconnection error:', error);
-                showStatus('Failed to connect to the server.', 'error');
-            }
-        }
+<script>
+async function api(path, opts = {}) {
+  const res = await fetch(path, opts);
+  const json = await res.json().catch(()=>({}));
+  if (!res.ok) throw json;
+  return json;
+}
 
-        async function fetchActiveBots() {
-            try {
-                const response = await fetch('/active');
-                const data = await response.json();
-                activeCountSpan.textContent = data.count;
-                activeBotsList.innerHTML = '';
-                if (data.numbers && data.numbers.length > 0) {
-                    data.numbers.forEach(number => {
-                        const listItem = document.createElement('li');
-                        listItem.innerHTML = `
-                            <span>${number}</span>
-                            <button onclick="disconnectNumber('${number}')">Disconnect</button>
-                        `;
-                        activeBotsList.appendChild(listItem);
-                    });
-                } else {
-                    activeBotsList.innerHTML = '<li>No active bots.</li>';
-                }
-            } catch (error) {
-                console.error('Error fetching active bots:', error);
-                activeCountSpan.textContent = 'Error';
-                activeBotsList.innerHTML = '<li>Failed to load active bots.</li>';
-            }
-        }
+function showMsg(el, txt, cls='') {
+  el.innerHTML = txt;
+  el.className = cls;
+  setTimeout(()=>{ if (el === loginMsg || el === saveMsg || el === connectStatus) el.innerHTML = ''; }, 7000);
+}
 
-        // Fetch active bots on page load
-        document.addEventListener('DOMContentLoaded', fetchActiveBots);
-    </script>
+const connectBtn = document.getElementById('connectBtn');
+const phoneInput = document.getElementById('phoneNumber');
+const connectStatus = document.getElementById('connectStatus');
+const pairingBox = document.getElementById('pairingBox');
+const activeList = document.getElementById('activeList');
+const activeCount = document.getElementById('activeCount');
+
+connectBtn.onclick = async () => {
+  const number = phoneInput.value.trim();
+  if (!number) { showMsg(connectStatus,'Enter phone number','error'); return; }
+  showMsg(connectStatus, 'Connecting...', 'muted');
+  try {
+    const res = await api(`/connect?number=${encodeURIComponent(number)}`);
+    if (res.code) {
+      pairingBox.innerHTML = '<strong>Pairing code:</strong><br><pre>'+res.code+'</pre>Scan this code in WhatsApp → Linked Devices';
+    } else if (res.status === 'connected') {
+      showMsg(connectStatus, 'Connected! Password sent to bot number.', 'success');
+    } else if (res.status === 'already_connected') {
+      showMsg(connectStatus, 'Already connected', 'muted');
+    } else {
+      showMsg(connectStatus,'Connected (no code)','success');
+    }
+    await fetchActive();
+  } catch (e) {
+    showMsg(connectStatus, 'Error: '+(e.error || e.message || 'Unknown'), 'error');
+    console.error(e);
+  }
+};
+
+async function fetchActive() {
+  try {
+    const res = await api('/active');
+    activeCount.innerText = `(${res.count})`;
+    activeList.innerHTML = '';
+    if (res.numbers && res.numbers.length) {
+      res.numbers.forEach(n => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${n}</span><div class="row"><button onclick="disconnect('${n}')">Disconnect</button><button onclick="showPairing('${n}')">Show Config</button></div>`;
+        activeList.appendChild(li);
+      });
+    } else {
+      activeList.innerHTML = '<li class="muted">No active bots</li>';
+    }
+  } catch (e) {
+    activeList.innerHTML = '<li class="error">Failed to load active bots</li>';
+  }
+}
+window.fetchActive = fetchActive;
+
+async function disconnect(number) {
+  if (!confirm('Disconnect '+number+'?')) return;
+  try {
+    const res = await api(`/disconnect?number=${encodeURIComponent(number)}`);
+    alert(res.message || 'Disconnected');
+    fetchActive();
+  } catch (e) {
+    alert('Error disconnecting: '+(e.message || e.error || JSON.stringify(e)));
+  }
+}
+
+async function showPairing(number) {
+  pairingBox.innerHTML = 'Loading config from server...';
+  try {
+    const res = await api(`/api/get-config?number=${encodeURIComponent(number)}`);
+    pairingBox.innerHTML = '<strong>Config preview:</strong><pre>'+JSON.stringify(res.config, null, 2)+'</pre>';
+  } catch (e) {
+    pairingBox.innerHTML = '<div class="error">Failed to load config</div>';
+  }
+}
+
+// Login & Editor
+const loginNumber = document.getElementById('loginNumber');
+const loginPassword = document.getElementById('loginPassword');
+const loginBtn = document.getElementById('loginBtn');
+const fetchConfigBtn = document.getElementById('fetchConfigBtn');
+const loginMsg = document.getElementById('loginMsg');
+
+const editorPanel = document.getElementById('editorPanel');
+const loginPanel = document.getElementById('loginPanel');
+const editNumber = document.getElementById('editNumber');
+const editPassword = document.getElementById('editPassword');
+const configTextarea = document.getElementById('configTextarea');
+const saveConfigBtn = document.getElementById('saveConfigBtn');
+const logoutBtn = document.getElementById('logoutBtn');
+const saveMsg = document.getElementById('saveMsg');
+
+let currentSession = null;
+
+loginBtn.onclick = async () => {
+  const number = loginNumber.value.trim(); const password = loginPassword.value.trim();
+  if (!number || !password) { showMsg(loginMsg,'Enter number and password','error'); return; }
+  showMsg(loginMsg,'Logging in...','muted');
+  try {
+    const res = await api('/api/login', {
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body: JSON.stringify({ number, password })
+    });
+    currentSession = { number, password };
+    editNumber.value = number;
+    editPassword.value = password;
+    configTextarea.value = JSON.stringify(res.config, null, 2);
+    loginPanel.style.display = 'none';
+    editorPanel.style.display = 'block';
+    showMsg(loginMsg,'Logged in','success');
+  } catch (e) {
+    showMsg(loginMsg, 'Login failed: '+(e.error || e.message || 'Invalid'), 'error');
+    console.error(e);
+  }
+};
+
+fetchConfigBtn.onclick = async () => {
+  const number = loginNumber.value.trim();
+  if (!number) { showMsg(loginMsg,'Enter number first','error'); return; }
+  showMsg(loginMsg,'Loading default config...','muted');
+  try {
+    const res = await api(`/api/get-config?number=${encodeURIComponent(number)}`);
+    configTextarea.value = JSON.stringify(res.config, null, 2);
+    showMsg(loginMsg,'Loaded', 'success');
+  } catch (e) {
+    showMsg(loginMsg,'Failed to load: '+(e.error||e.message||''), 'error');
+  }
+};
+
+saveConfigBtn.onclick = async () => {
+  if (!currentSession) return showMsg(saveMsg,'Login first','error');
+  let parsed;
+  try {
+    parsed = JSON.parse(configTextarea.value);
+  } catch (e) {
+    return showMsg(saveMsg,'Invalid JSON','error');
+  }
+  showMsg(saveMsg,'Saving...', 'muted');
+  try {
+    const res = await api('/api/save-config', {
+      method:'POST', headers:{'content-type':'application/json'},
+      body: JSON.stringify({ number: currentSession.number, password: currentSession.password, config: parsed })
+    });
+    showMsg(saveMsg, res.message || 'Saved', 'success');
+  } catch (e) {
+    showMsg(saveMsg,'Save failed: '+(e.error||e.message||''), 'error');
+  }
+};
+
+logoutBtn.onclick = () => {
+  currentSession = null;
+  loginPanel.style.display = 'block';
+  editorPanel.style.display = 'none';
+  loginNumber.value = '';
+  loginPassword.value = '';
+  configTextarea.value = '';
+  showMsg(loginMsg,'Logged out','muted');
+};
+
+// initial load
+fetchActive();
+setInterval(fetchActive, 10_000);
+</script>
 </body>
 </html>
