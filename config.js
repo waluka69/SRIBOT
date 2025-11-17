@@ -25,5 +25,11 @@ module.exports = {
     MEDIA_URL: process.env.MEDIA_URL || "https://whatsapp.com/channel/0029VaAPzWX0G0XdhMbtRI2i",
     AUTO_RECORDING: process.env.AUTO_RECORDING || "false",
     ANTI_DELETE: process.env.ANTI_DELETE || "true",
-    READ_MESSAGE: process.env.READ_MESSAGE || "true"
+    READ_MESSAGE: process.env.READ_MESSAGE || "true",
+    // New config options
+    WELCOME_MSG: process.env.WELCOME_MSG || "Welcome to the group!",
+    GOODBYE_MSG: process.env.GOODBYE_MSG || "Goodbye!",
+    MAX_DOWNLOAD_SIZE: process.env.MAX_DOWNLOAD_SIZE || "100",
+    AUTO_BIO: process.env.AUTO_BIO || "false",
+    AUTO_STATUS: process.env.AUTO_STATUS || "false"
 };
